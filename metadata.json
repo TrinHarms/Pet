@@ -1,0 +1,5 @@
+{
+  "name": "WTM Pet Compliance Tracker",
+  "description": "A comprehensive dashboard for managing pet compliance in residential units, tracking vaccination status, weight limits, and documentation.",
+  "requestFramePermissions": []
+}
