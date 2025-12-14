@@ -1,27 +1,56 @@
 import React, { useMemo, useState } from 'react';
 import { LayoutDashboard, Dog, ShieldCheck } from 'lucide-react';
 import { MOCK_PET_DB, PDF_VERIFIED_UNITS } from './constants';
-import { EnrichedPetData, ComplianceStatus } from './types';
+import { EnrichedPetData, ComplianceStatus, PetData } from './types';
 import Dashboard from './components/Dashboard';
 import PetTable from './components/PetTable';
+import AddPetModal from './components/AddPetModal';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'list'>('dashboard');
+  const [pets, setPets] = useState<PetData[]>(MOCK_PET_DB);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingPet, setEditingPet] = useState<PetData | null>(null);
+
+  const handleSavePet = (petToSave: PetData) => {
+    setPets(prev => {
+      const exists = prev.some(p => p.id === petToSave.id);
+      if (exists) {
+        return prev.map(p => p.id === petToSave.id ? petToSave : p);
+      }
+      return [...prev, petToSave];
+    });
+    setEditingPet(null);
+  };
+
+  const handleImportPets = (importedPets: PetData[]) => {
+    setPets(prev => [...prev, ...importedPets]);
+    alert(`Successfully imported ${importedPets.length} pets to the registry.`);
+  };
+
+  const openAddModal = () => {
+    setEditingPet(null);
+    setIsAddModalOpen(true);
+  };
+
+  const openEditModal = (pet: PetData) => {
+    setEditingPet(pet);
+    setIsAddModalOpen(true);
+  };
 
   const processedData: EnrichedPetData[] = useMemo(() => {
-    return MOCK_PET_DB.map((pet) => {
+    return pets.map((pet) => {
       const isPdfSubmitted = PDF_VERIFIED_UNITS.includes(pet.unitNo);
       let status = ComplianceStatus.COMPLIANT;
       const remarkLower = pet.remark.toLowerCase();
 
       // Simulated "Today" date for the purpose of the report context
-      // We set this to Dec 12, 2025 to align with the "expired Sep 2025" logic in the dataset
       const today = new Date('2025-12-12'); 
       
       // Logic Priority derived from Master Database characteristics
 
       // 1. Critical Violations (Limits, Weight, Docs)
-      if (remarkLower.includes('over weight') || remarkLower.includes('over limit')) {
+      if (remarkLower.includes('over weight') || remarkLower.includes('over limit') || remarkLower.includes('quantity')) {
         status = ComplianceStatus.NON_COMPLIANT_LIMIT;
       } 
       else if (remarkLower.includes('id mismatch') || remarkLower.includes('doc')) {
@@ -31,8 +60,14 @@ const App: React.FC = () => {
       else if (remarkLower.includes('expired')) {
         status = ComplianceStatus.NON_COMPLIANT_VACCINE;
       }
-      else if (pet.vaccineExpire) {
-        const expDate = new Date(pet.vaccineExpire);
+      else if (pet.vaccineExpire && pet.vaccineExpire !== '-' && pet.vaccineExpire !== 'N/A') {
+        // Handle both YYYY-MM-DD and DD/MM/YYYY if mixed
+        let expDate = new Date(pet.vaccineExpire);
+        if (isNaN(expDate.getTime())) {
+           // Fallback simple parser if format is odd
+           expDate = new Date(); 
+        }
+        
         if (expDate < today) {
           status = ComplianceStatus.NON_COMPLIANT_VACCINE;
         }
@@ -53,7 +88,7 @@ const App: React.FC = () => {
         isPdfSubmitted
       };
     });
-  }, []);
+  }, [pets]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -130,10 +165,22 @@ const App: React.FC = () => {
           {activeTab === 'dashboard' ? (
             <Dashboard data={processedData} />
           ) : (
-            <PetTable data={processedData} />
+            <PetTable 
+              data={processedData} 
+              onAddPet={openAddModal} 
+              onEditPet={openEditModal}
+              onImportPets={handleImportPets}
+            />
           )}
         </div>
       </main>
+
+      <AddPetModal 
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)} 
+        onSave={handleSavePet}
+        initialData={editingPet}
+      />
 
       {/* Footer */}
       <footer className="bg-white border-t border-gray-200 mt-auto">

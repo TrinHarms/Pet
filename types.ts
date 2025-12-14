@@ -1,17 +1,23 @@
-export type PetType = 'Dog' | 'Cat' | 'Bird' | 'Other' | 'Unknown';
+export type PetType = 'Dog' | 'Cat' | 'Bird' | 'Rabbit' | 'Other' | 'Unknown';
 
 export interface PetData {
   id: string;
   unitNo: string;
-  tower: string;
+  tower: string; // 'Building' in CSV
+  floor: string;
+  ownerName: string;
+  residentType: 'Owner' | 'Tenant' | '-';
   petName: string;
-  petType: PetType;
+  petType: string; // Changed to string to accommodate specific types if needed, or mapped to PetType
   breed: string;
   sex: 'M' | 'F' | '-';
+  dob: string;
+  ageYears: number;
   weightKg: number;
+  vaccineLastDate: string;
   vaccineExpire: string; // YYYY-MM-DD
-  ownerName: string;
-  tenantName: string;
+  vaccineStatus: string;
+  documentsComplete: boolean;
   remark: string;
 }
 
